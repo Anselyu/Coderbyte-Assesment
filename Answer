@@ -1,0 +1,41 @@
+import pandas as pd
+from io import StringIO
+import re
+
+data = 'Airline Code;DelayTimes;FlightCodes;To_From\nAir Canada (!);[21, 40];20015.0;WAterLoo_NEWYork\n<Air France> (12);[];;Montreal_TORONTO\n(Porter Airways. );[60, 22, 87];20035.0;CALgary_Ottawa\n12. Air France;[78, 66];;Ottawa_VANcouvER\n""".\\.Lufthansa.\\.""";[12, 33];20055.0;london_MONTreal\n'
+
+firstFlightCode = 0
+
+# Read the stringified table into a dataframe using StringIO 
+df = pd.read_csv(StringIO(data), delimiter=";")
+
+# 1. Find the first flight code value and incremement by 10 for rest of columns
+
+# Obtain what the first flight code should be, even if the first flight code is missing
+for row in range (0, len(df['FlightCodes'])):
+    if(pd.notna(df['FlightCodes'].iloc[row])):
+        firstFlightCode = df.at[row, 'FlightCodes'] - 10 * row
+        break
+
+# Increment all flight codes by 10 after first flight code
+for row in range (0, len(df['FlightCodes'])):
+    df.at[row, 'FlightCodes'] = firstFlightCode + 10 * row
+        
+# Convert to int
+df['FlightCodes'] = df['FlightCodes'].astype(int)
+
+# 2. Split into two columns, drop old column and convert into capital case. 
+df[['To', 'From']] = df['To_From'].str.split("_", expand=True)
+df.drop('To_From', axis=1, inplace=True)  
+
+df['To'] = df['To'].str.title()
+df['From'] = df['From'].str.title()
+
+# 3. Cleaning up the Airline column by removing special characters and trailing/leading spaces.
+for row in range (0, len(df['Airline Code'])):
+     df.at[row, 'Airline Code'] = re.sub(r'[^a-zA-Z\s]', '', df['Airline Code'].iloc[row])
+
+df['Airline Code'] = df['Airline Code'].str.strip()
+
+print(df)
+
